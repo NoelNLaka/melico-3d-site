@@ -1,0 +1,18 @@
+{
+  "name": "melico-3d-site",
+  "version": "1.0.0",
+  "description": "Interactive 3D architectural & GIS site viewer with satellite terrain & roof framing inspection",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.1.0"
+  }
+}

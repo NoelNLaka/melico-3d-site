@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Melico Site — Interactive 3D Architectural & GIS Map Viewer</title>
+  <meta name="description" content="Explore Melico site in interactive 3D: GIS satellite terrain, timber roof framing, and architectural layouts powered by Three.js and Vercel.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <!-- 3D Canvas Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="active">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-header">
+        <h1>Melico 3D Site</h1>
+        <p class="loader-subtitle">Loading GIS Satellite Terrain & Architectural Model...</p>
+      </div>
+      <div class="progress-container">
+        <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+      </div>
+      <div class="progress-stats">
+        <span id="progress-text">0%</span>
+        <span id="load-detail">Downloading 7.28 MB model...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Header HUD -->
+  <header id="app-header" class="glass-panel">
+    <div class="header-brand">
+      <div class="logo-dot"></div>
+      <div class="brand-titles">
+        <h1 class="brand-name">Melico Site</h1>
+        <span class="brand-tag">GIS & Architectural 3D</span>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="hud-badge"><span class="status-indicator"></span> Live 3D Scene</span>
+      <span class="hud-badge secondary">525 Elements</span>
+      <span class="hud-badge secondary">Google Satellite Terrain</span>
+    </div>
+  </header>
+
+  <!-- Floating Layers Control Drawer -->
+  <aside id="layers-panel" class="glass-panel">
+    <div class="panel-header">
+      <div class="panel-title-group">
+        <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <h2>Scene Layers</h2>
+      </div>
+      <button id="toggle-all-layers-btn" class="text-button" title="Toggle all layers">All On</button>
+    </div>
+
+    <div class="layers-list">
+      <!-- Satellite Map -->
+      <label class="layer-item" for="layer-satellite">
+        <input type="checkbox" id="layer-satellite" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Satellite Map Surface</span>
+        <span class="layer-badge">GIS</span>
+      </label>
+
+      <!-- Roof Framing Group -->
+      <label class="layer-item" for="layer-roof-framing">
+        <input type="checkbox" id="layer-roof-framing" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Timber Roof Framing</span>
+        <span class="layer-badge count">369</span>
+      </label>
+
+      <!-- Roof Surfaces -->
+      <label class="layer-item" for="layer-roof-surface">
+        <input type="checkbox" id="layer-roof-surface" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Roof Caps & Fascia</span>
+        <span class="layer-badge count">20</span>
+      </label>
+
+      <div class="layer-divider"></div>
+
+      <!-- Ground Floor Walls -->
+      <label class="layer-item" for="layer-ground-walls">
+        <input type="checkbox" id="layer-ground-walls" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Ground Floor Walls</span>
+        <span class="layer-badge">GF</span>
+      </label>
+
+      <!-- First Floor Walls -->
+      <label class="layer-item" for="layer-first-floor">
+        <input type="checkbox" id="layer-first-floor" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">First Floor Walls & Slab</span>
+        <span class="layer-badge">FF</span>
+      </label>
+
+      <!-- Building Blocks -->
+      <label class="layer-item" for="layer-building-blocks">
+        <input type="checkbox" id="layer-building-blocks" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Blocks (A, B, C)</span>
+        <span class="layer-badge">Massing</span>
+      </label>
+
+      <!-- Room Labels -->
+      <label class="layer-item" for="layer-room-labels">
+        <input type="checkbox" id="layer-room-labels" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Room Labels & Text</span>
+        <span class="layer-badge">Labels</span>
+      </label>
+    </div>
+  </aside>
+
+  <!-- Camera Presets Bar -->
+  <nav id="camera-nav" class="glass-panel" aria-label="Camera Presets">
+    <button id="cam-isometric" class="cam-btn active" title="Isometric 3D Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+      </svg>
+      <span>Isometric 3D</span>
+    </button>
+    <button id="cam-satellite" class="cam-btn" title="Top-Down Satellite GIS View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+      <span>Satellite Map</span>
+    </button>
+    <button id="cam-roof" class="cam-btn" title="Roof Framing Inspection">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>Roof Framing</span>
+    </button>
+    <button id="cam-street" class="cam-btn" title="Eye-Level Walkthrough View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="7" r="4"></circle>
+        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
+      </svg>
+      <span>Street View</span>
+    </button>
+  </nav>
+
+  <!-- Viewport Utility Bar -->
+  <div id="viewport-tools" class="glass-panel">
+    <button id="tool-wireframe" class="tool-btn" title="Toggle Wireframe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="3" y1="9" x2="21" y2="9"></line>
+        <line x1="3" y1="15" x2="21" y2="15"></line>
+        <line x1="9" y1="3" x2="9" y2="21"></line>
+        <line x1="15" y1="3" x2="15" y2="21"></line>
+      </svg>
+    </button>
+    <button id="tool-sun" class="tool-btn active" title="Toggle Sun Shadows">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    </button>
+    <button id="tool-reset" class="tool-btn" title="Reset Camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"></path>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+    </button>
+    <button id="tool-fullscreen" class="tool-btn" title="Toggle Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Element Inspector HUD Card -->
+  <div id="inspector-card" class="glass-panel">
+    <div class="inspector-header">
+      <span class="inspector-badge" id="insp-category">Structure</span>
+      <button id="insp-close-btn" class="insp-close">&times;</button>
+    </div>
+    <h3 id="insp-name">Selected Element</h3>
+    <div class="inspector-details">
+      <div class="insp-row">
+        <span class="insp-label">Type:</span>
+        <span class="insp-val" id="insp-type">Timber Framing</span>
+      </div>
+      <div class="insp-row">
+        <span class="insp-label">Location:</span>
+        <span class="insp-val mono" id="insp-pos">X: 0.00, Y: 0.00, Z: 0.00</span>
+      </div>
+      <div class="insp-row">
+        <span class="insp-label">Dimensions:</span>
+        <span class="insp-val mono" id="insp-dim">0.09 x 2.40 x 0.04 m</span>
+      </div>
+      <div class="insp-row">
+        <span class="insp-label">Vertices:</span>
+        <span class="insp-val mono" id="insp-verts">24</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Hint -->
+  <footer id="interaction-hint">
+    <span><kbd>Left Click + Drag</kbd> Rotate</span>
+    <span><kbd>Right Click + Drag</kbd> Pan</span>
+    <span><kbd>Scroll</kbd> Zoom</span>
+    <span><kbd>Click Object</kbd> Inspect</span>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
