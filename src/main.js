@@ -24,7 +24,7 @@ const layers = {
 };
 
 // Layers hidden by default
-const defaultHiddenLayers = ['satellite', 'roomLabels'];
+const defaultHiddenLayers = ['roomLabels'];
 
 // Selection & Raycasting
 const raycaster = new THREE.Raycaster();
@@ -192,12 +192,43 @@ function classifySceneObjects(root) {
       child.material.roughness = Math.max(child.material.roughness || 0.5, 0.4);
     }
 
+    // Completely destroy and remove GroundSurface so it never renders or covers the Google Earth surface
+    if (name.includes('GroundSurface') || name.includes('groundSurfaceGroup')) {
+      child.visible = false;
+      if (child.parent) {
+        child.parent.remove(child);
+      }
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
+      }
+      return;
+    }
+
     // Classify into functional layer
-    if (name.includes('GOOGLE_SAT_WM') || name.includes('GroundSurface')) {
+    if (name.includes('GOOGLE_SAT_WM')) {
       layers.satellite.push(child);
       child.receiveShadow = true;
       child.castShadow = false;
       child.userData.category = 'GIS Satellite Terrain';
+      child.renderOrder = 1;
+
+      // Apply polygonOffset to satellite terrain so it always renders
+      // cleanly on top of any foundation/slab below it on mobile and desktop GPUs
+      if (child.isMesh && child.material) {
+        const applyOffset = (mat) => {
+          mat.polygonOffset = true;
+          mat.polygonOffsetFactor = -1;
+          mat.polygonOffsetUnits = -1;
+          mat.depthWrite = true;
+        };
+        if (Array.isArray(child.material)) {
+          child.material.forEach(applyOffset);
+        } else {
+          applyOffset(child.material);
+        }
+      }
     } else if (
       name.startsWith('Common Rafter') ||
       name.startsWith('Jack Rafter') ||
@@ -245,6 +276,7 @@ function classifySceneObjects(root) {
       layers.floor.push(child);
       child.castShadow = false;
       child.receiveShadow = true;
+      child.renderOrder = 0;
       child.userData.category = 'Floor Slab';
     } else if (name === 'A Block' || name === 'B Block' || name === 'C Block') {
       layers.buildingBlocks.push(child);
