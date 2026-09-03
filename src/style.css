@@ -191,6 +191,42 @@ html, body {
   gap: 8px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glass-bright);
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-action-btn svg {
+  width: 15px;
+  height: 15px;
+  color: var(--accent-cyan);
+}
+
+.header-action-btn:hover {
+  background: rgba(0, 242, 254, 0.15);
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
+}
+
 .hud-badge {
   display: inline-flex;
   align-items: center;
@@ -216,16 +252,43 @@ html, body {
   box-shadow: 0 0 8px var(--accent-emerald);
 }
 
+/* Mobile Panel Backdrop */
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 25;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.panel-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Floating Layers Drawer */
 #layers-panel {
   position: absolute;
   top: 90px;
   left: 20px;
-  width: 260px;
+  width: 270px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  z-index: 30;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#layers-panel.collapsed {
+  transform: translateX(calc(-100% - 30px));
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .panel-header {
@@ -240,6 +303,29 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.panel-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .panel-icon {
@@ -348,16 +434,79 @@ html, body {
   margin: 4px 0;
 }
 
-/* Camera Presets Bar */
-#camera-nav {
+/* Camera Presets Bar Container */
+#camera-nav-container {
   position: absolute;
-  bottom: 30px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cam-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass-bright);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.cam-toggle-pill svg {
+  width: 15px;
+  height: 15px;
+  color: var(--accent-cyan);
+}
+
+.cam-toggle-pill .chevron-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+}
+
+.cam-toggle-pill:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.2);
+}
+
+#camera-nav-container.collapsed .cam-toggle-pill .chevron-icon {
+  transform: rotate(180deg);
+}
+
+#camera-nav {
   display: flex;
   gap: 6px;
   padding: 6px;
   border-radius: 999px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, max-height 0.3s ease;
+  transform-origin: bottom center;
+}
+
+#camera-nav-container.collapsed #camera-nav {
+  transform: translateY(12px) scale(0.92);
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  overflow: hidden;
 }
 
 .cam-btn {
@@ -374,6 +523,7 @@ html, body {
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .cam-btn svg {
@@ -547,43 +697,196 @@ html, body {
   font-size: 0.68rem;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
+/* Clean View / Zen Mode (Hides HUD for full 3D viewport) */
+body.ui-hidden #app-header,
+body.ui-hidden #layers-panel,
+body.ui-hidden #camera-nav-container,
+body.ui-hidden #viewport-tools,
+body.ui-hidden #inspector-card,
+body.ui-hidden #interaction-hint {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-15px) !important;
+}
+
+body.ui-hidden #camera-nav-container {
+  transform: translate(-50%, 30px) !important;
+}
+
+.restore-ui-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.3);
+  transition: all 0.2s ease;
+}
+
+.restore-ui-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.restore-ui-btn:hover {
+  background: rgba(0, 242, 254, 0.15);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+body.ui-hidden .restore-ui-btn {
+  display: inline-flex;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tablet Responsiveness (max-width: 1024px) */
+@media (max-width: 1024px) {
   #app-header {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    padding: 10px 14px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    padding: 10px 16px;
   }
+
   .header-badges {
     display: none;
   }
+
   #layers-panel {
-    top: 70px;
-    left: 10px;
-    width: 220px;
-    max-height: 55vh;
+    top: 72px;
+    left: 12px;
+    width: min(300px, 85vw);
+    max-height: calc(100vh - 160px);
     overflow-y: auto;
+    z-index: 40;
   }
+
+  #camera-nav-container {
+    bottom: 16px;
+    width: 92%;
+    max-width: 520px;
+  }
+
   #camera-nav {
-    bottom: 20px;
-    width: 90%;
+    width: 100%;
     justify-content: space-around;
+    padding: 6px;
   }
-  .cam-btn span {
-    display: none;
+
+  .cam-btn {
+    padding: 8px 12px;
+    font-size: 0.78rem;
   }
+
+  #viewport-tools {
+    top: 72px;
+    right: 12px;
+  }
+
   #interaction-hint {
     display: none;
   }
-  #viewport-tools {
-    top: 70px;
-    right: 10px;
+}
+
+/* Mobile Phone Responsiveness (max-width: 768px) */
+@media (max-width: 768px) {
+  #app-header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 8px 12px;
   }
-  #inspector-card {
-    right: 10px;
-    left: 10px;
+
+  .brand-name {
+    font-size: 1rem;
+  }
+
+  .brand-tag {
+    font-size: 0.65rem;
+  }
+
+  .header-action-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  #layers-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 65vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    padding: 20px 16px;
+    z-index: 40;
+    transform: translateY(0);
+  }
+
+  #layers-panel.collapsed {
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  #camera-nav-container {
+    bottom: 12px;
     width: auto;
-    bottom: 80px;
+    max-width: 95vw;
+  }
+
+  #camera-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .cam-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .cam-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  #viewport-tools {
+    top: 60px;
+    right: 8px;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .tool-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  #inspector-card {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    bottom: 75px;
+    padding: 12px;
   }
 }

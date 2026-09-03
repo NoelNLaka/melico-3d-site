@@ -376,11 +376,61 @@ function setupUI() {
     });
   });
 
+  // Layers Panel Collapse / Expand Controls
+  const layersPanel = document.getElementById('layers-panel');
+  const toggleLayersBtn = document.getElementById('btn-toggle-layers');
+  const closeLayersBtn = document.getElementById('btn-close-layers');
+  const panelBackdrop = document.getElementById('panel-backdrop');
+
+  function setLayersPanelOpen(isOpen) {
+    if (!layersPanel) return;
+    layersPanel.classList.toggle('collapsed', !isOpen);
+    if (panelBackdrop) {
+      panelBackdrop.classList.toggle('active', isOpen && window.innerWidth <= 1024);
+    }
+  }
+
+  toggleLayersBtn?.addEventListener('click', () => {
+    const isCurrentlyCollapsed = layersPanel?.classList.contains('collapsed');
+    setLayersPanelOpen(isCurrentlyCollapsed);
+  });
+
+  closeLayersBtn?.addEventListener('click', () => {
+    setLayersPanelOpen(false);
+  });
+
+  panelBackdrop?.addEventListener('click', () => {
+    setLayersPanelOpen(false);
+  });
+
+  // On small/medium screens (tablets & phones <= 1024px), collapse layers by default
+  if (window.innerWidth <= 1024) {
+    setLayersPanelOpen(false);
+  }
+
+  // Camera Presets Bar Container Toggle
+  const camContainer = document.getElementById('camera-nav-container');
+  const toggleCamBtn = document.getElementById('btn-toggle-cam');
+
+  function setCamNavOpen(isOpen) {
+    if (!camContainer) return;
+    camContainer.classList.toggle('collapsed', !isOpen);
+  }
+
+  toggleCamBtn?.addEventListener('click', () => {
+    const isCollapsed = camContainer?.classList.contains('collapsed');
+    setCamNavOpen(isCollapsed);
+  });
+
   // Camera Presets
   const camButtons = document.querySelectorAll('.cam-btn');
   function setActiveCamBtn(btn) {
     camButtons.forEach((b) => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
+    // On phones (<= 768px), minimize camera bar after choosing a preset for full view
+    if (window.innerWidth <= 768) {
+      setCamNavOpen(false);
+    }
   }
 
   // 1. Isometric
@@ -402,7 +452,6 @@ function setupUI() {
   // 3. Roof Framing Inspection
   document.getElementById('cam-roof')?.addEventListener('click', (e) => {
     setActiveCamBtn(e.currentTarget);
-    // Find roof center or average rafter location
     const target = new THREE.Vector3(8, 3.5, -20);
     const pos = new THREE.Vector3(18, 14, -6);
     transitionCameraTo(pos, target);
@@ -417,6 +466,22 @@ function setupUI() {
   });
 
   // Viewport Tools
+  // Clean View (Zen Mode / Hide HUD)
+  const cleanViewBtn = document.getElementById('tool-clean-view');
+  const restoreUiBtn = document.getElementById('btn-restore-ui');
+
+  function setCleanView(isClean) {
+    document.body.classList.toggle('ui-hidden', isClean);
+  }
+
+  cleanViewBtn?.addEventListener('click', () => {
+    setCleanView(true);
+  });
+
+  restoreUiBtn?.addEventListener('click', () => {
+    setCleanView(false);
+  });
+
   // Wireframe
   const wireframeBtn = document.getElementById('tool-wireframe');
   wireframeBtn?.addEventListener('click', () => {

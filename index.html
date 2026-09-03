@@ -47,7 +47,20 @@
       <span class="hud-badge secondary">525 Elements</span>
       <span class="hud-badge secondary">Google Satellite Terrain</span>
     </div>
+    <div class="header-actions">
+      <button id="btn-toggle-layers" class="header-action-btn" title="Toggle Scene Layers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span>Layers</span>
+      </button>
+    </div>
   </header>
+
+  <!-- Mobile Panel Backdrop -->
+  <div id="panel-backdrop" class="panel-backdrop"></div>
 
   <!-- Floating Layers Control Drawer -->
   <aside id="layers-panel" class="glass-panel">
@@ -60,7 +73,10 @@
         </svg>
         <h2>Scene Layers</h2>
       </div>
-      <button id="toggle-all-layers-btn" class="text-button" title="Toggle all layers">All On</button>
+      <div class="panel-header-actions">
+        <button id="toggle-all-layers-btn" class="text-button" title="Toggle all layers">All On</button>
+        <button id="btn-close-layers" class="panel-close-btn" title="Close Panel" aria-label="Close Layers Panel">&times;</button>
+      </div>
     </div>
 
     <div class="layers-list">
@@ -132,37 +148,49 @@
     </div>
   </aside>
 
-  <!-- Camera Presets Bar -->
-  <nav id="camera-nav" class="glass-panel" aria-label="Camera Presets">
-    <button id="cam-isometric" class="cam-btn active" title="Isometric 3D Overview">
+  <!-- Camera Presets Bar with Mobile Toggle -->
+  <div id="camera-nav-container">
+    <button id="btn-toggle-cam" class="glass-panel cam-toggle-pill" title="Toggle Camera Presets">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
       </svg>
-      <span>Isometric 3D</span>
-    </button>
-    <button id="cam-satellite" class="cam-btn" title="Top-Down Satellite GIS View">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="2" y1="12" x2="22" y2="12"></line>
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      <span class="pill-label">Camera Views</span>
+      <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
       </svg>
-      <span>Satellite Map</span>
     </button>
-    <button id="cam-roof" class="cam-btn" title="Roof Framing Inspection">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-      </svg>
-      <span>Roof Framing</span>
-    </button>
-    <button id="cam-street" class="cam-btn" title="Eye-Level Walkthrough View">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="7" r="4"></circle>
-        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
-      </svg>
-      <span>Street View</span>
-    </button>
-  </nav>
+    <nav id="camera-nav" class="glass-panel" aria-label="Camera Presets">
+      <button id="cam-isometric" class="cam-btn active" title="Isometric 3D Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+        </svg>
+        <span>Isometric 3D</span>
+      </button>
+      <button id="cam-satellite" class="cam-btn" title="Top-Down Satellite GIS View">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <span>Satellite Map</span>
+      </button>
+      <button id="cam-roof" class="cam-btn" title="Roof Framing Inspection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Roof Framing</span>
+      </button>
+      <button id="cam-street" class="cam-btn" title="Eye-Level Walkthrough View">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="7" r="4"></circle>
+          <path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
+        </svg>
+        <span>Street View</span>
+      </button>
+    </nav>
+  </div>
 
   <!-- Viewport Utility Bar -->
   <div id="viewport-tools" class="glass-panel">
@@ -188,6 +216,12 @@
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
       </svg>
     </button>
+    <button id="tool-clean-view" class="tool-btn" title="Full Unobstructed View (Hide HUD)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
     <button id="tool-reset" class="tool-btn" title="Reset Camera">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M23 4v6h-6"></path>
@@ -200,6 +234,16 @@
       </svg>
     </button>
   </div>
+
+  <!-- Restore UI Button (shown when in Clean View) -->
+  <button id="btn-restore-ui" class="glass-panel restore-ui-btn" title="Restore HUD Menus">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+    <span>Show Menus</span>
+  </button>
 
   <!-- Element Inspector HUD Card -->
   <div id="inspector-card" class="glass-panel">
