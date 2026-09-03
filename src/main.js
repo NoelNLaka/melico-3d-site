@@ -18,9 +18,13 @@ const layers = {
   roofSurface: [],
   groundWalls: [],
   firstFloor: [],
+  floor: [],
   buildingBlocks: [],
   roomLabels: []
 };
+
+// Layers hidden by default
+const defaultHiddenLayers = ['satellite', 'roomLabels'];
 
 // Selection & Raycasting
 const raycaster = new THREE.Raycaster();
@@ -237,12 +241,17 @@ function classifySceneObjects(root) {
       child.castShadow = true;
       child.receiveShadow = true;
       child.userData.category = 'First Floor Structure';
+    } else if (name === 'Floor') {
+      layers.floor.push(child);
+      child.castShadow = false;
+      child.receiveShadow = true;
+      child.userData.category = 'Floor Slab';
     } else if (name === 'A Block' || name === 'B Block' || name === 'C Block') {
       layers.buildingBlocks.push(child);
       child.castShadow = true;
       child.receiveShadow = true;
       child.userData.category = 'Building Wing / Massing';
-    } else if (name.startsWith('Rm_') && name.includes('Lbl')) {
+    } else if ((name.startsWith('Rm_') && name.includes('Lbl')) || name.startsWith('Rm_sub')) {
       layers.roomLabels.push(child);
       child.userData.category = 'Room Identifier Label';
     } else {
@@ -250,6 +259,13 @@ function classifySceneObjects(root) {
       child.castShadow = true;
       child.receiveShadow = true;
       child.userData.category = 'Architectural Element';
+    }
+
+    // Apply default hidden state
+    for (const layerKey of defaultHiddenLayers) {
+      if (layers[layerKey].includes(child)) {
+        child.visible = false;
+      }
     }
   });
 }
@@ -287,14 +303,23 @@ function updateCameraAnimation(now) {
 function setupUI() {
   // Layer Toggles
   const layerBindings = [
-    { id: 'layer-satellite', items: layers.satellite },
-    { id: 'layer-roof-framing', items: layers.roofFraming },
-    { id: 'layer-roof-surface', items: layers.roofSurface },
-    { id: 'layer-ground-walls', items: layers.groundWalls },
-    { id: 'layer-first-floor', items: layers.firstFloor },
-    { id: 'layer-building-blocks', items: layers.buildingBlocks },
-    { id: 'layer-room-labels', items: layers.roomLabels }
+    { id: 'layer-satellite', key: 'satellite', items: layers.satellite },
+    { id: 'layer-roof-framing', key: 'roofFraming', items: layers.roofFraming },
+    { id: 'layer-roof-surface', key: 'roofSurface', items: layers.roofSurface },
+    { id: 'layer-ground-walls', key: 'groundWalls', items: layers.groundWalls },
+    { id: 'layer-first-floor', key: 'firstFloor', items: layers.firstFloor },
+    { id: 'layer-floor', key: 'floor', items: layers.floor },
+    { id: 'layer-building-blocks', key: 'buildingBlocks', items: layers.buildingBlocks },
+    { id: 'layer-room-labels', key: 'roomLabels', items: layers.roomLabels }
   ];
+
+  // Sync checkbox state with default hidden layers
+  layerBindings.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (el && defaultHiddenLayers.includes(key)) {
+      el.checked = false;
+    }
+  });
 
   layerBindings.forEach(({ id, items }) => {
     const el = document.getElementById(id);
