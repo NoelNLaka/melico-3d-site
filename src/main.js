@@ -25,17 +25,10 @@ const layers = {
 // Selection & Raycasting
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-let hoveredMesh = null;
 let selectedMesh = null;
-let originalMaterial = null;
-const highlightMaterial = new THREE.MeshStandardMaterial({
-  color: 0x00f2fe,
-  emissive: 0x0072ff,
-  emissiveIntensity: 0.6,
-  roughness: 0.2,
-  metalness: 0.8,
-  wireframe: false
-});
+let selectionBox = null;
+const pointerDownPos = { x: 0, y: 0 };
+let pointerDownTime = 0;
 
 // Camera Animation State
 let isAnimatingCamera = false;
@@ -374,7 +367,7 @@ function setupUI() {
     wireframeBtn.classList.toggle('active', isWireframe);
     if (!modelRoot) return;
     modelRoot.traverse((child) => {
-      if (child.isMesh && child.material) {
+      if (child.isMesh && child.material && !child.name.includes('GOOGLE_SAT_WM') && !child.name.includes('GroundSurface')) {
         if (Array.isArray(child.material)) {
           child.material.forEach((m) => (m.wireframe = isWireframe));
         } else {
@@ -425,8 +418,21 @@ function setupEventListeners() {
   window.addEventListener('resize', onWindowResize);
 
   container.addEventListener('pointerdown', (e) => {
-    // Check if clicking on canvas
     if (e.target !== renderer.domElement) return;
+    pointerDownPos.x = e.clientX;
+    pointerDownPos.y = e.clientY;
+    pointerDownTime = performance.now();
+  });
+
+  container.addEventListener('pointerup', (e) => {
+    if (e.target !== renderer.domElement) return;
+    const dx = e.clientX - pointerDownPos.x;
+    const dy = e.clientY - pointerDownPos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const duration = performance.now() - pointerDownTime;
+
+    // If dragged to orbit/pan (> 5px) or held longer than 500ms, do NOT trigger inspection
+    if (dist > 5 || duration > 500) return;
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -435,11 +441,24 @@ function setupEventListeners() {
     const intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
-      // Find first valid mesh that isn't the highlight helper
-      const hit = intersects.find((i) => i.object.isMesh && i.object.visible);
+      // Find first valid mesh that is visible and NOT the satellite map or selection box
+      const hit = intersects.find((i) =>
+        i.object.isMesh &&
+        i.object.visible &&
+        !i.object.name.includes('GOOGLE_SAT_WM') &&
+        !i.object.name.includes('GroundSurface') &&
+        i.object !== selectionBox
+      );
+
       if (hit) {
         inspectMesh(hit.object);
+      } else {
+        deselectMesh();
+        document.getElementById('inspector-card')?.classList.remove('visible');
       }
+    } else {
+      deselectMesh();
+      document.getElementById('inspector-card')?.classList.remove('visible');
     }
   });
 }
@@ -448,8 +467,18 @@ function inspectMesh(mesh) {
   deselectMesh();
 
   selectedMesh = mesh;
-  originalMaterial = mesh.material;
-  mesh.material = highlightMaterial;
+
+  // Highlight using an architectural cyan wireframe BoxHelper instead of replacing materials
+  if (!selectionBox) {
+    selectionBox = new THREE.BoxHelper(mesh, 0x00f2fe);
+    selectionBox.material.depthTest = false;
+    selectionBox.material.transparent = true;
+    selectionBox.material.opacity = 0.9;
+    scene.add(selectionBox);
+  } else {
+    selectionBox.setFromObject(mesh);
+    selectionBox.visible = true;
+  }
 
   const card = document.getElementById('inspector-card');
   const nameEl = document.getElementById('insp-name');
@@ -475,10 +504,9 @@ function inspectMesh(mesh) {
 }
 
 function deselectMesh() {
-  if (selectedMesh && originalMaterial) {
-    selectedMesh.material = originalMaterial;
-    selectedMesh = null;
-    originalMaterial = null;
+  selectedMesh = null;
+  if (selectionBox) {
+    selectionBox.visible = false;
   }
 }
 
@@ -495,6 +523,10 @@ function animate(now = 0) {
 
   updateCameraAnimation(now);
   controls.update();
+
+  if (selectionBox && selectedMesh && selectionBox.visible) {
+    selectionBox.update();
+  }
 
   renderer.render(scene, camera);
 }
