@@ -28,7 +28,7 @@
       </div>
       <div class="progress-stats">
         <span id="progress-text">0%</span>
-        <span id="load-detail">Downloading 3.8 MB model...</span>
+        <span id="load-detail">Downloading 3D model...</span>
       </div>
     </div>
   </div>
@@ -44,7 +44,7 @@
     </div>
     <div class="header-badges">
       <span class="hud-badge"><span class="status-indicator"></span> Live 3D Scene</span>
-      <span class="hud-badge secondary">525 Elements</span>
+      <span class="hud-badge secondary" id="hud-elements">— Elements</span>
       <span class="hud-badge secondary">Google Satellite Terrain</span>
     </div>
     <div class="header-actions">
@@ -93,15 +93,31 @@
         <input type="checkbox" id="layer-roof-framing" checked>
         <span class="custom-checkbox"></span>
         <span class="layer-name">Timber Roof Framing</span>
-        <span class="layer-badge count">369</span>
+        <span class="layer-badge count" id="count-roof-framing">—</span>
       </label>
 
-      <!-- Roof Surfaces -->
+      <!-- Roof & Ceiling Surfaces -->
       <label class="layer-item" for="layer-roof-surface">
         <input type="checkbox" id="layer-roof-surface" checked>
         <span class="custom-checkbox"></span>
-        <span class="layer-name">Roof Caps & Fascia</span>
-        <span class="layer-badge count">20</span>
+        <span class="layer-name">Roof & Ceiling Surfaces</span>
+        <span class="layer-badge count" id="count-roof-surface">—</span>
+      </label>
+
+      <!-- Water Tanks -->
+      <label class="layer-item" for="layer-tanks">
+        <input type="checkbox" id="layer-tanks" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Water Tanks & Stands</span>
+        <span class="layer-badge count" id="count-tanks">—</span>
+      </label>
+
+      <!-- Stairs, Walkways & Handrails -->
+      <label class="layer-item" for="layer-stairs">
+        <input type="checkbox" id="layer-stairs" checked>
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Stairs, Walkways & Rails</span>
+        <span class="layer-badge count" id="count-stairs">—</span>
       </label>
 
       <div class="layer-divider"></div>
@@ -136,6 +152,14 @@
         <span class="custom-checkbox"></span>
         <span class="layer-name">Blocks (A, B, C)</span>
         <span class="layer-badge">Massing</span>
+      </label>
+
+      <!-- Setting-Out Gridlines -->
+      <label class="layer-item" for="layer-grid">
+        <input type="checkbox" id="layer-grid">
+        <span class="custom-checkbox"></span>
+        <span class="layer-name">Setting-Out Gridlines</span>
+        <span class="layer-badge count" id="count-grid">—</span>
       </label>
 
       <!-- Room Labels -->

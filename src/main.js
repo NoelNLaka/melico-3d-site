@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 // --- State & References ---
 const container = document.getElementById('canvas-container');
 let scene, camera, renderer, controls;
 let modelRoot = null;
+let buildingBox = null;   // bounding box of the building only (excludes the GIS terrain)
 let directionalLight, ambientLight, hemisphereLight;
 let initialCameraPos, initialTarget;
 let isWireframe = false;
@@ -16,15 +18,18 @@ const layers = {
   satellite: [],
   roofFraming: [],
   roofSurface: [],
+  tanks: [],
+  stairs: [],
   groundWalls: [],
   firstFloor: [],
   floor: [],
   buildingBlocks: [],
+  grid: [],
   roomLabels: []
 };
 
 // Layers hidden by default
-const defaultHiddenLayers = ['roomLabels'];
+const defaultHiddenLayers = ['roomLabels', 'grid'];
 
 // Selection & Raycasting
 const raycaster = new THREE.Raycaster();
@@ -124,6 +129,12 @@ function setupLighting() {
 // --- Model Loader ---
 function loadModel() {
   const loader = new GLTFLoader();
+
+  // Geometry in melico_site.glb is Draco-compressed (keeps the download ~2 MB)
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('./draco/');
+  loader.setDRACOLoader(dracoLoader);
+
   const progressBar = document.getElementById('progress-bar');
   const progressText = document.getElementById('progress-text');
   const loadDetail = document.getElementById('load-detail');
@@ -138,6 +149,15 @@ function loadModel() {
       classifySceneObjects(modelRoot);
 
       scene.add(modelRoot);
+      modelRoot.updateMatrixWorld(true);
+
+      // Bounding box of the building itself (everything except the GIS terrain)
+      buildingBox = new THREE.Box3();
+      modelRoot.traverse((child) => {
+        if (child.isMesh && !layers.satellite.includes(child)) {
+          buildingBox.expandByObject(child);
+        }
+      });
 
       // Compute bounding box & center camera view
       const box = new THREE.Box3().setFromObject(modelRoot);
@@ -246,13 +266,51 @@ function classifySceneObjects(root) {
       name.startsWith('Fascia') ||
       name.startsWith('HipCap') ||
       name.startsWith('RoofCap') ||
+      name.startsWith('Roof_') ||
+      name.startsWith('ValleyCap') ||
+      name.startsWith('Building_Roof') ||
+      name.startsWith('Under Roof Surface') ||
+      name.startsWith('Top_Floor_Ceiling') ||
       name === 'Hip Roof' ||
       name.includes('RoofSurface')
     ) {
       layers.roofSurface.push(child);
       child.castShadow = true;
       child.receiveShadow = true;
-      child.userData.category = 'Roof Cladding & Cap';
+      child.userData.category = 'Roof & Ceiling Surface';
+    } else if (
+      name.startsWith('Tank_') ||
+      name.startsWith('Stand_') ||
+      name.startsWith('Pad_')
+    ) {
+      layers.tanks.push(child);
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.userData.category = 'Water Tank & Stand';
+    } else if (
+      name.startsWith('Stair_') ||
+      name.startsWith('House_Stair') ||
+      name.startsWith('Steps_') ||
+      name.startsWith('Landing') ||
+      name.startsWith('FF_Rail') ||
+      name.startsWith('GF_Rail') ||
+      name.includes('Walkway') ||
+      name.includes('Handrail')
+    ) {
+      layers.stairs.push(child);
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.userData.category = 'Stair, Walkway & Handrail';
+    } else if (name.startsWith('Grid_')) {
+      layers.grid.push(child);
+      child.castShadow = false;
+      child.receiveShadow = false;
+      child.userData.category = 'Setting-Out Gridline';
+    } else if (name.startsWith('Melico_Openings')) {
+      layers.buildingBlocks.push(child);
+      child.castShadow = false;
+      child.receiveShadow = false;
+      child.userData.category = 'Opening Outline (Window / Door / AC)';
     } else if (
       name.startsWith('IntWall_') ||
       name.startsWith('RoomDiv_') ||
@@ -338,12 +396,25 @@ function setupUI() {
     { id: 'layer-satellite', key: 'satellite', items: layers.satellite },
     { id: 'layer-roof-framing', key: 'roofFraming', items: layers.roofFraming },
     { id: 'layer-roof-surface', key: 'roofSurface', items: layers.roofSurface },
+    { id: 'layer-tanks', key: 'tanks', items: layers.tanks },
+    { id: 'layer-stairs', key: 'stairs', items: layers.stairs },
     { id: 'layer-ground-walls', key: 'groundWalls', items: layers.groundWalls },
     { id: 'layer-first-floor', key: 'firstFloor', items: layers.firstFloor },
     { id: 'layer-floor', key: 'floor', items: layers.floor },
     { id: 'layer-building-blocks', key: 'buildingBlocks', items: layers.buildingBlocks },
+    { id: 'layer-grid', key: 'grid', items: layers.grid },
     { id: 'layer-room-labels', key: 'roomLabels', items: layers.roomLabels }
   ];
+
+  // Live element counts on the layer rows and the header badge
+  let totalElements = 0;
+  layerBindings.forEach(({ id, items }) => {
+    const badge = document.getElementById('count-' + id.replace('layer-', ''));
+    if (badge) badge.textContent = items.length;
+    totalElements += items.length;
+  });
+  const hudElements = document.getElementById('hud-elements');
+  if (hudElements) hudElements.textContent = totalElements + ' Elements';
 
   // Sync checkbox state with default hidden layers
   layerBindings.forEach(({ id, key }) => {
@@ -449,19 +520,31 @@ function setupUI() {
     transitionCameraTo(pos, target);
   });
 
+  // Helper: building-centred framing so presets stay valid if the model moves/rescales
+  function buildingFrame() {
+    const box = buildingBox || new THREE.Box3().setFromObject(modelRoot);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const span = Math.max(size.x, size.z) || 40;
+    return { box, center, size, span };
+  }
+
   // 3. Roof Framing Inspection
   document.getElementById('cam-roof')?.addEventListener('click', (e) => {
     setActiveCamBtn(e.currentTarget);
-    const target = new THREE.Vector3(8, 3.5, -20);
-    const pos = new THREE.Vector3(18, 14, -6);
+    const { box, center, span } = buildingFrame();
+    const target = new THREE.Vector3(center.x, box.min.y + (box.max.y - box.min.y) * 0.7, center.z);
+    const pos = new THREE.Vector3(center.x + span * 0.6, target.y + span * 0.55, center.z + span * 0.6);
     transitionCameraTo(pos, target);
   });
 
   // 4. Street View / Eye Level
   document.getElementById('cam-street')?.addEventListener('click', (e) => {
     setActiveCamBtn(e.currentTarget);
-    const target = new THREE.Vector3(8, 2, -15);
-    const pos = new THREE.Vector3(-15, 2.5, -35);
+    const { box, center, span } = buildingFrame();
+    const eyeY = box.min.y + 1.7;
+    const target = new THREE.Vector3(center.x, eyeY + 1.2, center.z);
+    const pos = new THREE.Vector3(center.x - span * 0.35, eyeY, center.z - span * 1.0);
     transitionCameraTo(pos, target);
   });
 
