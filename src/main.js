@@ -22,6 +22,7 @@ const layers = {
   stairs: [],
   groundWalls: [],
   firstFloor: [],
+  fence: [],
   floor: [],
   buildingBlocks: [],
   grid: [],
@@ -30,6 +31,10 @@ const layers = {
 
 // Layers hidden by default
 const defaultHiddenLayers = ['roomLabels', 'grid'];
+
+// Assigned in setupUI(); re-run once the GLB has loaded and been classified,
+// since setupUI() runs before the async load resolves.
+let refreshLayerCounts = () => {};
 
 // Selection & Raycasting
 const raycaster = new THREE.Raycaster();
@@ -147,6 +152,7 @@ function loadModel() {
 
       // Adjust model orientation / scale if needed
       classifySceneObjects(modelRoot);
+      refreshLayerCounts();
 
       scene.add(modelRoot);
       modelRoot.updateMatrixWorld(true);
@@ -204,7 +210,10 @@ function classifySceneObjects(root) {
   root.traverse((child) => {
     if (!child.isMesh) return;
 
-    const name = child.name;
+    // GLTFLoader passes node names through PropertyBinding.sanitizeNodeName(),
+    // which replaces whitespace with '_' ("Common Rafter" -> "Common_Rafter").
+    // Normalise here so the rules below match regardless of which form is used.
+    const name = child.name.replace(/\s/g, '_');
 
     // Enhance materials for PBR appearance
     if (child.material) {
@@ -250,12 +259,12 @@ function classifySceneObjects(root) {
         }
       }
     } else if (
-      name.startsWith('Common Rafter') ||
-      name.startsWith('Jack Rafter') ||
-      name.startsWith('Valley Jack') ||
-      name.startsWith('Hip Rafter') ||
-      name.startsWith('Ridge Beam') ||
-      name.startsWith('Valley Rafter') ||
+      name.startsWith('Common_Rafter') ||
+      name.startsWith('Jack_Rafter') ||
+      name.startsWith('Valley_Jack') ||
+      name.startsWith('Hip_Rafter') ||
+      name.startsWith('Ridge_Beam') ||
+      name.startsWith('Valley_Rafter') ||
       name.startsWith('Plate')
     ) {
       layers.roofFraming.push(child);
@@ -269,9 +278,9 @@ function classifySceneObjects(root) {
       name.startsWith('Roof_') ||
       name.startsWith('ValleyCap') ||
       name.startsWith('Building_Roof') ||
-      name.startsWith('Under Roof Surface') ||
+      name.startsWith('Under_Roof_Surface') ||
       name.startsWith('Top_Floor_Ceiling') ||
-      name === 'Hip Roof' ||
+      name === 'Hip_Roof' ||
       name.includes('RoofSurface')
     ) {
       layers.roofSurface.push(child);
@@ -301,6 +310,11 @@ function classifySceneObjects(root) {
       child.castShadow = true;
       child.receiveShadow = true;
       child.userData.category = 'Stair, Walkway & Handrail';
+    } else if (name.startsWith('Fence_')) {
+      layers.fence.push(child);
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.userData.category = 'Boundary Fence';
     } else if (name.startsWith('Grid_')) {
       layers.grid.push(child);
       child.castShadow = false;
@@ -336,7 +350,7 @@ function classifySceneObjects(root) {
       child.receiveShadow = true;
       child.renderOrder = 0;
       child.userData.category = 'Floor Slab';
-    } else if (name === 'A Block' || name === 'B Block' || name === 'C Block') {
+    } else if (name === 'A_Block' || name === 'B_Block' || name === 'C_Block') {
       layers.buildingBlocks.push(child);
       child.castShadow = true;
       child.receiveShadow = true;
@@ -398,6 +412,7 @@ function setupUI() {
     { id: 'layer-roof-surface', key: 'roofSurface', items: layers.roofSurface },
     { id: 'layer-tanks', key: 'tanks', items: layers.tanks },
     { id: 'layer-stairs', key: 'stairs', items: layers.stairs },
+    { id: 'layer-fence', key: 'fence', items: layers.fence },
     { id: 'layer-ground-walls', key: 'groundWalls', items: layers.groundWalls },
     { id: 'layer-first-floor', key: 'firstFloor', items: layers.firstFloor },
     { id: 'layer-floor', key: 'floor', items: layers.floor },
@@ -407,14 +422,17 @@ function setupUI() {
   ];
 
   // Live element counts on the layer rows and the header badge
-  let totalElements = 0;
-  layerBindings.forEach(({ id, items }) => {
-    const badge = document.getElementById('count-' + id.replace('layer-', ''));
-    if (badge) badge.textContent = items.length;
-    totalElements += items.length;
-  });
-  const hudElements = document.getElementById('hud-elements');
-  if (hudElements) hudElements.textContent = totalElements + ' Elements';
+  refreshLayerCounts = () => {
+    let totalElements = 0;
+    layerBindings.forEach(({ id, items }) => {
+      const badge = document.getElementById('count-' + id.replace('layer-', ''));
+      if (badge) badge.textContent = items.length;
+      totalElements += items.length;
+    });
+    const hudElements = document.getElementById('hud-elements');
+    if (hudElements) hudElements.textContent = totalElements + ' Elements';
+  };
+  refreshLayerCounts();
 
   // Sync checkbox state with default hidden layers
   layerBindings.forEach(({ id, key }) => {
