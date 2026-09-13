@@ -131,6 +131,11 @@ function setupLighting() {
   scene.add(directionalLight);
 }
 
+// Vercel serves /models/* as `immutable` for a year and the filename never
+// changes, so browsers would keep a stale model forever. Bump this whenever
+// melico_site.glb is rebuilt to force a fresh download.
+const MODEL_VERSION = '2026-09-corridor-entrances';
+
 // --- Model Loader ---
 function loadModel() {
   const loader = new GLTFLoader();
@@ -146,7 +151,7 @@ function loadModel() {
   const overlay = document.getElementById('loading-overlay');
 
   loader.load(
-    './models/melico_site.glb',
+    `./models/melico_site.glb?v=${MODEL_VERSION}`,
     (gltf) => {
       modelRoot = gltf.scene;
 
