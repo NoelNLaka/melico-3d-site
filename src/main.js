@@ -308,6 +308,7 @@ function classifySceneObjects(root) {
       name.startsWith('Landing') ||
       name.startsWith('FF_Rail') ||
       name.startsWith('GF_Rail') ||
+      name.startsWith('Bridge_') ||
       name.includes('Walkway') ||
       name.includes('Handrail')
     ) {
