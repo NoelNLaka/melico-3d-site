@@ -6,3 +6,7 @@ dist
 .idea
 *.png
 *.jpg
+
+# Python
+__pycache__/
+*.pyc
