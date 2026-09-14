@@ -134,7 +134,7 @@ function setupLighting() {
 // Vercel serves /models/* as `immutable` for a year and the filename never
 // changes, so browsers would keep a stale model forever. Bump this whenever
 // melico_site.glb is rebuilt to force a fresh download.
-const MODEL_VERSION = '2026-09-corridor-entrances';
+const MODEL_VERSION = '2026-09-roof-plates';
 
 // --- Model Loader ---
 function loadModel() {
